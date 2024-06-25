@@ -164,7 +164,6 @@ export default defineComponent({
       list,
       selectedItem,
       listLength,
-      selectedAuthority,
 
       onClickRoot,
       onClickBtnAdd,
