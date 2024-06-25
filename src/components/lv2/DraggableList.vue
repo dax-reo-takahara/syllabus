@@ -1,12 +1,12 @@
 <template lang="pug">
-.frontLevel2
+.draggable-list
 
 </template>
 <script lang="ts">
 import { defineComponent } from "@vue/composition-api";
 
 export default defineComponent({
-  name: "FrontListLevel2",
+  name: "DraggableList",
 });
 </script>
 

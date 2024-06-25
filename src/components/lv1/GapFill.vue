@@ -1,5 +1,5 @@
 <template lang="pug">
-.bl-testLevel1
+.gap-fill
   input#title-input(type="text")
 
   #card-list.bl-cardList
@@ -44,7 +44,7 @@
 import { defineComponent, onMounted } from "@vue/composition-api";
 
 export default defineComponent({
-  name: "TestLevel1GapFill",
+  name: "GapFill",
 
   props: {
     cardList: {
