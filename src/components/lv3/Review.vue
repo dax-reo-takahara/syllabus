@@ -1,199 +1,184 @@
 <template lang="pug">
-.front-review
-  .frontLevel3-btn(@click="onClickBtn")
-  .list(v-if="listLength")
-    .frontItem(
-      v-for="item, i in list"
-      v-if="item.isVisible"
-      :class="selectedClass"
-      @click.stop="$emit('click')"
-    )
-      .frontItem-inner
-        .frontItem-title
-          | {{  item.id }}
-        .frontItem-description
-          | {{  item.description }}
+//- 1. 'app' を v-bind せずに直接 id="app" と書くべきです。
+div#app(v-bind:id="'app'")
+  //- buttonタグを使って可読性を上げる
+  div.button(@click="onClick") Clickable
+  div.information
+    input(v-model="inputValue" @keyup.enter="onEnterSearch" placeholder="検索")
+    div.searched-item
+      | 検索結果: {{ searchedItem }}
 
-        .frontButtons
-          button.frontItem-btn(
-            v-if="item.id !== 'separator'"
-            @click.stop="$emit('click-btn-add')"
-          )
-            | 追加
-          button.frontItem-btn(
-            v-if="item.id !== 'separator'"
-            @click.stop="$emit('click-btn-delete')"
-          )
-        | 削除
+  //- 複数の属性がある場合は改行して書くべきです。
+  //- v-forとv-ifが別の要素で使用してください
+  div.item(v-for="item, i in items" v-if="showItems" @click="selectItem(i)")
+    //- keyが未設定なので選択状態がバグりませんか
+    div.item-inner(:class="{ selected: selectedIndex === i }")
+      span {{ item.name }}
+      div.button(@click.stop="addItem(i)") Add
+      div.button(@click.stop="removeItem(i)") Remove
 
-    front-list-item(
-      :item="item"
-      @on-item-click="ItemClick(item)"
-      @click-btn-add="onClickButton(i)"
-      @click-btn-delete="onClickButtonDelete(i)"
-    )
-  //- v-elseで良いのでは
-  .list(v-if="!listLength")
-    | 項目がありません。
-
+  .button(@click="handleClick('Click')")
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, watch } from "@vue/composition-api";
-
-export interface ListItem {
-  id: string | "separator";
-  name: string;
-  description: string;
-  authority: "admin" | "guest";
-  isSelected: boolean;
-}
+import { defineComponent, ref, watch } from "@vue/composition-api";
 
 export default defineComponent({
-  name: "Review",
+  props: {
+    propName: {
+      type: String,
+      // スペルミスです。required にしてください。
+      require: true,
+    },
+  },
+  setup(props, { emit }) {
+    // リアクティブにする必要はなさそうです
+    // 定数名が具体的でない
+    const count = ref<number>(0);
 
-  setup() {
-    const DEFAULT_ITEM: ListItem = {
-      id: "",
-      name: "",
-      description: "",
-      isSelected: false,
-      authority: "admin",
-    };
+    /** inputの値 */
+    const inputValue = ref("");
 
-    let itemCountId = 0;
+    /** 検索したitem */
+    const searchedItem = ref();
 
-    const list = ref<ListItem[]>([]);
-    itemCountId = list.value.length;
+    /** 選択したindex */
+    const selectedIndex = ref<number | null>(null);
 
-    const selectedItem = ref<ListItem>(DEFAULT_ITEM);
+    // anyを使用せず型定義をしてください
+    /** itemリスト */
+    const items = ref<any[]>([]);
 
-    // ・定数名が具体的でない
-    const tempList = ref();
+    /** itemリストの表示 */
+    const showItems = ref<boolean>(true);
 
-    // ・watchでなくcomputedにするべき
+    // 6: watchでなくcomputedにするべきです。
     watch(
-      list,
-      () => {
-        tempList.value = list.value;
-      }
+      () => props.propName,
+      (newVal) => {
+        // return節にできるのでは？
+        // switchで良いのでは？
+        if (count.value != null && newVal === "review") {
+          items.value = [{ name: "john" }, { name: "jane" }];
+        } else if (count.value != null && newVal === "etc") {
+          items.value = [];
+        }
+      },
+      // ??. immediate を設定しないと何も表示されないのでは？
+      { immediate: true }
     );
 
-    // computedなら● / watchは▲ - 項目の数を表示する機能を実装しなさい。
-    const listLength = computed(() => list.value.length);
-
-    // リアクティブにする必要ある？
-    const selectedType = ref("");
-
-    // nameは削除できる
-    // returnがstring | undefinedになるはず
     /**
-     * Root要素のクリックイベント
-     * @param id id
-     * @param selectedType 選択種別
-     * @param name 名称
-     */
-    function onClick(param: { id: string, selectedType?: string }): string {
-      // ・selectedTypeでreturn節にするべき
-      // ・switchにするべき
-      if (selectedType && selectedType === "typeA") {
-        // ・console.logを削除
-        console.log("A");
-        // ・computedにgetterがないのに直接変更している
-        listLength.value = 5;
-        return;
-      }
-      else if (selectedType && selectedType === "typeB") {
-        return "B";
-      }
-    }
+      * カウンターを更新
+      */
+    const handleClick = () => {
+      count.value++;
+    };
 
-    // ボタンをクリックしたら、入力欄の値を使用してリストの最後に項目を追加する機能を実装しなさい。
-    function onClickBtnAdd() {
-      list.value.push({
-        ...DEFAULT_ITEM,
-        id: String(itemCountId),
-        description: selectedItem.value.description,
-      });
-      itemCountId++;
-    }
-
-    function onClick() {
-      console.log(item);
-    }
-
-    // splice
-    // 選択した項目の下に新しい項目を追加する機能を実装しなさい。
-    function onClickButton(index: number) {
-      const item = { ...DEFAULT_ITEM, id: String(itemCountId) };
-      list.value.splice(index + 1, 0, item);
-      itemCountId++;
-    }
-
-    function onClickButtonDelete(index: number) {
-      list.value.splice(index, 1);
-    }
-
-    // 入力した情報で選択した項目を入れ替える機能を実装しなさい。
-
-    // イベント伝播を止められるか
     /**
-     * root要素のクリック
-     */
-    function onClickRoot() {
-      list.value.forEach((item) => (item.isSelected = false));
-      selectedItem.value = DEFAULT_ITEM;
+      * itemの選択
+      * @param index index
+      */
+    function selectItem(index: number) {
+      selectedIndex.value = index;
     }
 
-    // 選択項目は常に1つでなければならない。
     /**
-     * 項目のクリック
-     * @param item item
-     */
-    function ItemClick(item: ListItem) {
-      list.value.forEach((itm) => {
-        itm.isSelected = false;
-      });
-      const selectItem = list.value.find((itm) => itm.id === item.id);
-      if (!selectItem) return;
-      selectItem.isSelected = true;
-      selectedItem.value = selectItem;
+      * itemの検索
+      */
+    function onEnterSearch() {
+      const target = items.value.filter(
+        (item) => item.name == inputValue.value
+      );
+      console.log("search", inputValue.value, target);
+      // 追加: targetがなかったらエラーになりませんか？
+      searchedItem.value = target[0].name;
+    }
+
+    // 13. onClickが何をクリックするのか関数名に明示されていない
+    // 関数の定義と戻り値が異なっている
+    /**
+      * クリックイベント
+      */
+    function onClick(): any {
+      // 3. emitのイベント名の最初に 'on' は不要です。
+      emit("on-click");
+    }
+
+    /**
+      * item追加
+      * @param index index
+      * @param key key // 関数の引数に存在しない引数がJSDocに書かれているので削除
+      */
+    function addItem(index: number) {
+      const newItem = {
+        // idやnameが重複しますが大丈夫でしょうか？
+        id: index,
+        name: `Item ${index}`,
+      };
+      items.value.splice(index + 1, 0, newItem);
+    }
+
+    /**
+      * item削除
+      * @param index index
+      */
+    function removeItem(index: number) {
+      items.value.splice(index, 1);
     }
 
     return {
-      list,
-      selectedItem,
-      listLength,
-
-      onClickRoot,
-      onClickBtnAdd,
-      ItemClick,
-      onClickButton,
-      onClickButtonDelete,
+      count,
+      inputValue,
+      searchedItem,
+      selectedIndex,
+      items,
+      showItems,
+      handleClick,
+      selectItem,
+      onEnterSearch,
+      onClick,
+      addItem,
+      removeItem,
     };
   },
 });
 </script>
 
-<!-- styleを書くならscopedを付けてください -->
+<!-- 4. scoped を追加してください。 -->
 <style lang="scss">
-// SCSS変数を使ってください
-
-// クラス名は複数単語で構成してください
-.list {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  // gap: 10px;
-  padding: 20px;
-  border: 1px solid;
-  margin: 0 auto;
-  width: 400px;
-  height: 300px;
-  overflow: hidden scroll;
+input {
+  border-radius: 10px;
+  border: 2px solid blue;
+  margin: 5px !important;
 }
 
-.frontInfo-name {
-  height: 20px !important;
+.searched-item {
+  height: 15px;
+  font-size: 12px;
+  margin: 10px;
+}
+
+.button {
+  width: 80px;
+  border: 1px solid;
+  cursor: pointer;
+}
+
+.item {
+  margin: 0;
+  padding: 0;
+  border: 1px solid;
+}
+
+.item-inner {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px;
+}
+
+.selected {
+  background-color: rgb(253, 179, 183);
 }
 </style>
