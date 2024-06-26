@@ -1,17 +1,20 @@
 <template lang="pug">
 //- 1. 'app' を v-bind せずに直接 id="app" と書くべきです。
-div#app(v-bind:id="'app'")
-  //- buttonタグを使って可読性を上げる
+//- 21. ファイル名/クラス名/IDは揃えた方が良いのでは
+div#app(v-bind:id="'review'")
+  //- 20. buttonタグを使って可読性を上げる
   div.button(@click="onClick") Clickable
+  //- 22. クラス名は複数単語で命名
   div.information
     input(v-model="inputValue" @keyup.enter="onEnterSearch" placeholder="検索")
     div.searched-item
       | 検索結果: {{ searchedItem }}
 
-  //- 複数の属性がある場合は改行して書くべきです。
-  //- v-forとv-ifが別の要素で使用してください
+  //- 2. 複数の属性がある場合は改行して書くべきです。
+  //- 5. v-forとv-ifが別の要素で使用してください
   div.item(v-for="item, i in items" v-if="showItems" @click="selectItem(i)")
-    //- keyが未設定なので選択状態がバグりませんか
+    //- 9. keyが未設定なので選択状態がバグりませんか
+    //- 23. 動的に付与するクラスなのでis-selectedとしてください
     div.item-inner(:class="{ selected: selectedIndex === i }")
       span {{ item.name }}
       div.button(@click.stop="addItem(i)") Add
@@ -23,17 +26,31 @@ div#app(v-bind:id="'app'")
 <script lang="ts">
 import { defineComponent, ref, watch } from "@vue/composition-api";
 
+type PrimaryKey = {
+  id: number;
+};
+
+// 11. 型は継承してまとめるべきです
+type Items = {
+  name: string;
+  description?: string;
+};
+
 export default defineComponent({
+  name: "CodeReview",
+
   props: {
     propName: {
       type: String,
-      // スペルミスです。required にしてください。
-      require: true,
+      // 8. スペルミスです。required にしてください。
+      require: false,
     },
   },
+
   setup(props, { emit }) {
-    // リアクティブにする必要はなさそうです
-    // 定数名が具体的でない
+    // 7. リアクティブにする必要はなさそうです
+    // 14. 定数名が具体的でない
+    //
     const count = ref<number>(0);
 
     /** inputの値 */
@@ -42,12 +59,12 @@ export default defineComponent({
     /** 検索したitem */
     const searchedItem = ref();
 
+    // 10. anyを使用せず型定義をしてください
     /** 選択したindex */
-    const selectedIndex = ref<number | null>(null);
+    const selectedIndex = ref<any>();
 
-    // anyを使用せず型定義をしてください
     /** itemリスト */
-    const items = ref<any[]>([]);
+    const items = ref<(Items & PrimaryKey)[]>([]);
 
     /** itemリストの表示 */
     const showItems = ref<boolean>(true);
@@ -56,11 +73,16 @@ export default defineComponent({
     watch(
       () => props.propName,
       (newVal) => {
-        // return節にできるのでは？
-        // switchで良いのでは？
+        // 30. ガード節にできるのでは？
+        // 17.switchで良いのでは？
         if (count.value != null && newVal === "review") {
-          items.value = [{ name: "john" }, { name: "jane" }];
-        } else if (count.value != null && newVal === "etc") {
+          items.value = [
+            { id: 0, name: "john" },
+            { id: 1, name: "jane" },
+          ];
+        } else if (count.value != null && newVal === "patternB") {
+          items.value = [{ id: 0, name: "B" }];
+        } else if (count.value != null && newVal === "patternC") {
           items.value = [];
         }
       },
@@ -87,11 +109,11 @@ export default defineComponent({
       * itemの検索
       */
     function onEnterSearch() {
+      // 16. findの方が良いのでは？
       const target = items.value.filter(
         (item) => item.name == inputValue.value
       );
-      console.log("search", inputValue.value, target);
-      // 追加: targetがなかったらエラーになりませんか？
+      // 31: targetがなかったらエラーになりませんか？
       searchedItem.value = target[0].name;
     }
 
@@ -105,14 +127,15 @@ export default defineComponent({
       emit("on-click");
     }
 
+    // 15. 関数の引数に存在しない引数がJSDocに書かれているので削除
     /**
       * item追加
       * @param index index
-      * @param key key // 関数の引数に存在しない引数がJSDocに書かれているので削除
+      * @param key key
       */
     function addItem(index: number) {
       const newItem = {
-        // idやnameが重複しますが大丈夫でしょうか？
+        // 19. idやnameが重複しますが大丈夫でしょうか？
         id: index,
         name: `Item ${index}`,
       };
@@ -147,14 +170,18 @@ export default defineComponent({
 
 <!-- 4. scoped を追加してください。 -->
 <style lang="scss">
+/* 26. クラス以外は詳細度が高くなるので禁止です */
+/* 27. 影響範囲を考慮していますか？ */
 input {
   border-radius: 10px;
   border: 2px solid blue;
+  /* 25. important必要ですか？ */
   margin: 5px !important;
 }
 
 .searched-item {
   height: 15px;
+  /* 24. 汎用的な値はSCSS変数にしてください */
   font-size: 12px;
   margin: 10px;
 }
@@ -176,9 +203,10 @@ input {
   justify-content: space-around;
   align-items: center;
   padding: 10px;
-}
 
-.selected {
-  background-color: rgb(253, 179, 183);
+  /* 27. 影響範囲を考慮していますか？ */
+  .selected {
+    background-color: rgb(253, 179, 183);
+  }
 }
 </style>
